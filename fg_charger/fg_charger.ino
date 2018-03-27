@@ -63,11 +63,16 @@ void setup() {
   Wire.begin();
 
   if(!initBQ24295()){
-    Serial.println("Error:initialization");
+    Serial.println("Error: BQ24295 initialization");
+    Serial.flush();
     exit(0);
   }
   
-  initLC709203F();
+  if(!initLC709203F()){
+    Serial.println("Error: LC709203F initialization");
+    Serial.flush();
+    exit(0);
+  }
  
 }
 
@@ -120,14 +125,14 @@ void writeWordRegister(int address, uint8_t reg, uint16_t val){
 
   buff[0] = (address << 1) | 0x00; //Slave Address & Write
   buff[1] = reg; // Register
-  buff[3] = (uint8_t) (0xFF & val);
-  buff[4] = (uint8_t) (0xFF & (val >> 8));
+  buff[2] = (uint8_t) (0xFF & val);
+  buff[3] = (uint8_t) (0xFF & (val >> 8));
   crc = getCRC8(buff, 4);
   
   Wire.beginTransmission(address); 
   Wire.write(reg);
+  Wire.write(buff[2]);
   Wire.write(buff[3]);
-  Wire.write(buff[4]);
   Wire.write(crc);
   Wire.endTransmission();
   
@@ -183,16 +188,35 @@ boolean initLC709203F(){
   uint16_t val;
   Serial.println("Initialize Fuel Gauge");
 
-  if(readWordRegister(FG_SLAVE_ADDRESS, FG_REG_NOTP, &val)){
-    Serial.print("Number of The Parameter: "); 
-    Serial.println(val, HEX);
-  }
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_ICPM, 0x0001);
+  if(!readWordRegister(FG_SLAVE_ADDRESS, FG_REG_ICPM, &val)) return false;
+  Serial.print("IC Power Mode: 0x"); 
+  Serial.println(val, HEX);
+  
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_APA, 0x002D);
+  if(!readWordRegister(FG_SLAVE_ADDRESS, FG_REG_APA, &val)) return false;
+  Serial.print("APA: 0x"); 
+  Serial.println(val, HEX);
+  
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_COTP, 0x0001);
+  if(!readWordRegister(FG_SLAVE_ADDRESS, FG_REG_COTP, &val)) return false;
+  Serial.print("Battery Profile: 0x"); 
+  Serial.println(val, HEX);
+  
 
-  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_APA, 0x2D);
-  if(readWordRegister(FG_SLAVE_ADDRESS, FG_REG_APA, &val)){
-    Serial.print("APA: "); 
-    Serial.println(val, HEX);
-  }
+  //writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_BRSOC, 0xAA55);
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_IRSOC, 0xAA55);
+  Serial.println("Initialize RSOC...");
+
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_SB, 0x0001);
+  if(!readWordRegister(FG_SLAVE_ADDRESS, FG_REG_SB, &val)) return false;
+  Serial.print("Thermistor Mode: 0x"); 
+  Serial.println(val, HEX);
+
+  writeWordRegister(FG_SLAVE_ADDRESS, FG_REG_TB, 0x0D34);
+  if(!readWordRegister(FG_SLAVE_ADDRESS, FG_REG_TB, &val)) return false;
+  Serial.print("B-constant of Thermistor : 0x"); 
+  Serial.println(val, HEX);
   
   return true;
 }
