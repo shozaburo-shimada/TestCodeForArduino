@@ -230,7 +230,8 @@ uint8_t getCRC8( const void *buff, size_t size ){
         
         for ( int i = 0 ; i < CRC_BIT_LENGTH ; i++ ){
             if ( crc8 & 0x80 ){
-                crc8 <<= 1; crc8 ^= CRC8_ATM;
+                crc8 <<= 1;
+                crc8 ^= CRC8_ATM;
             }
             else{
                 crc8 <<= 1;
