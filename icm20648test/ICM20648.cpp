@@ -10,22 +10,26 @@ int ICM20648::init(){
   Serial.print("Device ID: 0x");
   Serial.println(did, HEX);
 
-  uint8_t ctrl = readRegister(REG_PWR_MGMT_1);
-  Serial.println(ctrl, HEX);
+  setPowerMode(true);
+  
+  uint8_t rslt = readRegister(REG_LP_CONFIG);
+  Serial.println(rslt, HEX);
   
   return 1;  
 
 }
 
-void ICM20648::setPowerMode(boolean mode){
-  //mode => ture, low power mode
-  //mode => false, high powerformance (low noise) mode
+void ICM20648::setPowerMode(boolean lpmode){
+  //lpmode => ture, low power mode
+  //lpmode => false, high powerformance (low noise) mode
+  uint8_t data;
   
-  if(mode){
-    //writeRegister()  
+  if(lpmode){
+    data = BIT_I2C_MST_CYCLE | BIT_ACCEL_CYCLE | BIT_GYRO_CYCLE;
   }else{
-    
+    data = BIT_I2C_MST_CYCLE;
   }
+  writeRegister(REG_LP_CONFIG, data);
   
 }
 
